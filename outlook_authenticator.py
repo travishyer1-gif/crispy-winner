@@ -6,44 +6,39 @@ from datetime import datetime
 from typing import List, Dict, Any
 
 class OutlookAuthenticator:
-    def __init__(self, tenant_id: str, client_id: str, username: str, password: str):
+    def __init__(self, tenant_id: str, client_id: str, client_secret: str):
         """
         Initialize the Outlook Authenticator with Microsoft Graph API credentials.
         
         Args:
             tenant_id (str): Azure AD Tenant ID
             client_id (str): Azure AD Application (Client) ID
-            username (str): User's email address
-            password (str): User's password
+            client_secret (str): Azure AD Client Secret
         """
         self.tenant_id = tenant_id
         self.client_id = client_id
-        self.username = username
-        self.password = password
+        self.client_secret = client_secret
         self.authority = f"https://login.microsoftonline.com/{tenant_id}"
         self.scope = ["https://graph.microsoft.com/.default"]
         self.access_token = None
         
     def authenticate(self) -> bool:
         """
-        Authenticate using MSAL and acquire access token.
+        Authenticate using MSAL and acquire access token via client credentials flow.
         
         Returns:
             bool: True if authentication successful, False otherwise
         """
         try:
-            # Create MSAL Public Client Application
-            app = msal.PublicClientApplication(
+            # Create MSAL Confidential Client Application
+            app = msal.ConfidentialClientApplication(
                 client_id=self.client_id,
+                client_credential=self.client_secret,
                 authority=self.authority
             )
             
-            # Acquire token using username/password flow
-            result = app.acquire_token_by_username_password(
-                username=self.username,
-                password=self.password,
-                scopes=self.scope
-            )
+            # Acquire token using client credentials flow
+            result = app.acquire_token_for_client(scopes=self.scope)
             
             if "access_token" in result:
                 self.access_token = result["access_token"]
@@ -127,7 +122,10 @@ class OutlookAuthenticator:
             "$orderby": "receivedDateTime desc"
         }
         
-        emails = self._make_graph_request("/me/messages", params)
+        # Use organization-wide endpoint with specific user
+        user_email = "thyer@advantagewisp.com"
+        endpoint = f"/users/{user_email}/messages"
+        emails = self._make_graph_request(endpoint, params)
         print(f"✅ Retrieved {len(emails)} inbox emails")
         return emails
     
@@ -145,7 +143,10 @@ class OutlookAuthenticator:
             "$orderby": "sentDateTime desc"
         }
         
-        emails = self._make_graph_request("/me/mailFolders('sentitems')/messages", params)
+        # Use organization-wide endpoint with specific user
+        user_email = "thyer@advantagewisp.com"
+        endpoint = f"/users/{user_email}/mailFolders('sentitems')/messages"
+        emails = self._make_graph_request(endpoint, params)
         print(f"✅ Retrieved {len(emails)} sent emails")
         return emails
     
@@ -163,7 +164,10 @@ class OutlookAuthenticator:
             "$orderby": "start/dateTime desc"
         }
         
-        events = self._make_graph_request("/me/events", params)
+        # Use organization-wide endpoint with specific user
+        user_email = "thyer@advantagewisp.com"
+        endpoint = f"/users/{user_email}/events"
+        events = self._make_graph_request(endpoint, params)
         print(f"✅ Retrieved {len(events)} calendar events")
         return events
     
@@ -228,19 +232,22 @@ def main():
     print("🔐 Microsoft Outlook AI Agent - Authentication & Data Retrieval")
     print("=" * 60)
     
-    # Configuration - Replace with your actual values
-    TENANT_ID = "your_tenant_id_here"
-    CLIENT_ID = "your_client_id_here"
-    USERNAME = "your_email@domain.com"
-    PASSWORD = "your_password_here"
+    # Import configuration
+    try:
+        from config import TENANT_ID, CLIENT_ID, CLIENT_SECRET
+    except ImportError:
+        print("❌ Error: config.py not found. Please copy config_template.py to config.py and fill in your credentials.")
+        return
+    except Exception as e:
+        print(f"❌ Error importing configuration: {str(e)}")
+        return
     
     try:
         # Create authenticator instance
         authenticator = OutlookAuthenticator(
             tenant_id=TENANT_ID,
             client_id=CLIENT_ID,
-            username=USERNAME,
-            password=PASSWORD
+            client_secret=CLIENT_SECRET
         )
         
         # Fetch all data
