@@ -230,8 +230,39 @@ python outlook_authenticator.py
 ### 🔄 Next Steps
 
 Future steps in the AI Agent project will include:
-- **Step 2**: Natural language processing of email content
+- **Step 2**: Structure, Clean, and Enrich Data with Pandas
 - **Step 3**: Intelligent email categorization and prioritization
 - **Step 4**: Automated response generation
 - **Step 5**: Calendar optimization and scheduling assistance
 - **Step 6**: Integration with other AI services
+
+## Step 2: Structure, Clean, and Enrich Data with Pandas
+
+### Requirements
+
+Install/update dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+### Usage
+
+1. Ensure `outlook_data.json` exists (produced by Step 1).
+2. Run the processing script:
+
+```bash
+python process_outlook_data.py --input outlook_data.json --output outlook_data_processed.csv --output-json outlook_data_processed.json
+```
+
+### Output Columns
+
+The resulting table includes:
+
+- sender_name, sender_address
+- recipient_name, recipient_address
+- subject, date, body_content
+- has_attachment, attachment_names, is_flagged
+- communication_flow, summary
+
+Duplicates are removed based on `id`. Missing subjects are filled with `(no subject)`.
